@@ -1,6 +1,6 @@
 # ENPM 661 - Planning for Autonomous Robots: 
 # Project 3 - Point Robot Dijkstra on Mobile Robot
-# Shon Cortes Bo-Shiang Wang
+# Shon Cortes, Bo-Shiang Wang
 
 import numpy as np
 import copy
@@ -8,7 +8,7 @@ import cv2
 
 map = 255*np.ones([301, 401, 3], dtype = np.uint8)
 
-def obstacles_chk(node): # Check if position is in obstacle space.
+def obstacles_chk(node): # Check if position is in Robot Adjusted obstacle space. Obstacle space was expanded by a radius of 10 + 5 for clearance for a total of 15. Warning obstacles appear larger than they are.
    
     # Rectangle 
     if node[1] >= (node[0] * 0.7) + 74.39 - 15 and node[1] <= (node[0] * 0.7) + 98.568 + 15 and node[1] >= (node[0] * -1.428) + 176.554 - 15 and node[1] <= (node[0] * -1.428) + 438.068 + 15:
@@ -24,6 +24,26 @@ def obstacles_chk(node): # Check if position is in obstacle space.
     
     # 3 section Rectangular Area
     elif node[0] >= 200 - 15 and node[0] <= 230 + 15 and node[1] >= 230 - 15 and node[1] <= 280 + 15: # First section
+        return True
+ 
+    else:
+        return False
+
+def obstacle_visulaize(node): # Check if point is an obstacle. Original, un-modified obstacle space.
+    # Rectangle 
+    if node[1] >= (node[0] * 0.7) + 74.39 and node[1] <= (node[0] * 0.7) + 98.568 and node[1] >= (node[0] * -1.428) + 176.554 and node[1] <= (node[0] * -1.428) + 438.068:
+        return True
+
+    # Circle
+    elif (node[0] - 90)**2 + (node[1] - 70)**2 <= (35)**2:
+        return True
+
+    # Elipse
+    elif ((node[0] - 246)**2)/((60)**2) + ((node[1] - 145)**2)/((30)**2) <= 1:
+        return True
+    
+    # 3 section Rectangular Area
+    elif node[0] >= 200 and node[0] <= 230 and node[1] >= 230 and node[1] <= 280: # First section
         return True
  
     else:
