@@ -6,8 +6,6 @@ import numpy as np
 import copy
 import cv2
 
-map = 255*np.ones([301, 401, 3], dtype = np.uint8)
-
 def obstacles_chk(node): # Check if position is in Robot Adjusted obstacle space. Obstacle space was expanded by a radius of 10 + 5 for clearance for a total of 15. Warning obstacles appear larger than they are.
    
     # Rectangle 
@@ -49,32 +47,18 @@ def obstacle_visulaize(node): # Check if point is an obstacle. Original, un-modi
     else:
         return False
 
-def move_check(child_node, move): # Check if the move is allowed. If it is, add the child node to the visited_list and children_nodes list
-    child_node = copy.deepcopy(child_node)
+def move_check(child_node): # Check if the move is allowed. 
 
     # Check if out of puzzle boundary
     if child_node[0] < 0 or child_node[1] < 0 or child_node[0] >= map.shape[1] or child_node[1] >= map.shape[0]:
-        return
+        return False
 
     # Check if obstacle
     elif obstacles_chk(child_node):
-        return
+        return False
 
-    # Check if child node has been visited before
-    try:
-        visited_list.index([child_node[0], child_node[1]])
-
-    except ValueError:
-        
-        # Add child to visited and parent nodes list
-        visited_list.append([child_node[0], child_node[1]])
-        
-        parent_nodes.append(child_node)
-        child_node[2] = parent_index
-        children_nodes.append(child_node)
-        # print(move) # For debugging
     else:
-        return
+        return True
  
 def begin(): # Ask for user input of start and goal pos. Start and goal much be positive integers
     while True:
@@ -115,54 +99,61 @@ def visualize_path(node):
 
     cv2.imshow("Map", map)
 
-class Node:
+class Node: # Class for storing node position, cost to come, and parent index.
     def __init__(self, x, y, cost, parent_index):
         self.x = x
         self.y = y
         self.cost = cost
         self.parent_index = parent_index
 
-def motion_model():
-    model = [[1, 0, 1],
-             [0, 1, 1],
-             [-1, 0, 1],
-             [0, -1, 1],
-             [-1, -1, np.sqrt(2)],
-             [-1, 1, np.sqrt(2)],
-             [1, -1, np.sqrt(2)],
-             [1, 1, np.sqrt(2)]]
+def motion_model(): # Defines action set and cost [move in x, move in y, cost].
+    model = [[1, 0, 1], # Right
+             [0, 1, 1], # Up
+             [-1, 0, 1], # Left
+             [0, -1, 1], # Down
+             [-1, -1, np.sqrt(2)], # Down Left
+             [-1, 1, np.sqrt(2)], # Up Left
+             [1, -1, np.sqrt(2)], # Down Right
+             [1, 1, np.sqrt(2)]] # Up Right
 
     return model
 
 def dijkstra(start_x, start_y, goal_x, goal_y):
+    
+    # Initialize start and goal nodes from node class
     start_node = Node(start_x, start_y, 0, -1)
     goal_node = Node(goal_x, goal_y, 0, -1)
 
     # obstacle_map = ObstacleMap((start_x, start_y), (goal_x, goal_y))
+
+    # Initialize dictionaries
     path, distance, queue, visited = dict(), dict(), dict(), dict()
 
-    motion = motion_model()
-    explored_map = []
-    queue[(start_node.x, start_node.y)] = start_node
-    distance[(start_node.x, start_node.y)] = 0
+    motion = motion_model() # Initialize action set
+    explored_map = [] # Initialize list of explored positions
+    queue[(start_node.x, start_node.y)] = start_node # Initialize queue with startnode for Dijkstra algorithm.
+    distance[(start_node.x, start_node.y)] = 0 # Initialize distance traveled.
 
-    while True:
-        cur_index = min(queue, key=lambda o: queue[o].cost)
-        cur = queue[cur_index]
-        if cur.x == goal_node.x and cur.y == goal_node.y:
+    while True: # Start of Dijkstra Algorithm.
+
+        cur_index = min(queue, key=lambda o: queue[o].cost) # Find the node in queue with the minimum cost.
+        cur = queue[cur_index] # Assign node in queue with minimum cost to be the current node to be tested.
+        
+        if cur.x == goal_node.x and cur.y == goal_node.y: # If goal node is reached, Break the while loop.
             # print("Goal!!!")
             goal_node.parent_index = cur.parent_index
             goal_node.cost = cur.cost
             break
 
-        del queue[cur_index]
-        visited[cur_index] = cur
+        del queue[cur_index] # Remove the current node from the queue.
+        visited[cur_index] = cur # Add current node to visited list.
 
-        explored_map.append((cur.x, cur.y))
+        explored_map.append((cur.x, cur.y)) # Add current node to explored map.
 
-        for i in range(len(motion)):
-            node = Node(cur.x + motion[i][0], cur.y + motion[i][1], cur.cost + motion[i][2], cur_index)
-            node_index = (node.x, node.y)
+        for i in range(len(motion)): # Generate childeren of current node based on the action set.
+
+            node = Node(cur.x + motion[i][0], cur.y + motion[i][1], cur.cost + motion[i][2], cur_index) # Generate child node
+            node_index = (node.x, node.y) # Assign child node position
 
             # Check if the next node is valid (Out of boundary)
             # if not obstacle_map.is_valid(node.x, node.y):
@@ -172,37 +163,40 @@ def dijkstra(start_x, start_y, goal_x, goal_y):
             # if is_obstacle(node.x, node.y):
             #     continue
 
-            # If the next node is already visited, skip it
-            if node_index in visited:
+            # if move_check(node_index): # Check if child is within the map or in an obstacle.
+            #     pass
+
+            if node_index in visited: # If the next node is already visited, skip it
                 continue
 
-            if node_index in queue:
+            if node_index in queue: # If the child node is already in the queue, compare and update the node's cost and parent as needed.
                 if queue[node_index].cost > node.cost:
                     queue[node_index].cost = node.cost
                     queue[node_index].parent_index = cur_index
-            else:
+            else: # Else add child to the queue.
                 queue[node_index] = node
 
     # Backtrack the path from Goal to Start
     path = []
     parent_index = goal_node.parent_index
-    while parent_index != -1:
+    while parent_index != -1: # Follow the parents from the goal node to the start node and add them to the path list.
         n = visited[parent_index]
         path.append((n.x, n.y))
         parent_index = n.parent_index
 
-    path = list(reversed(path))
-    path.append((goal_x, goal_y))
+    path = list(reversed(path)) # Reverse the path list to get the path from start node to goal node.
+    path.append((goal_x, goal_y)) # Add Goal node to the end of the path list
     return explored_map, path
 
 if __name__ == "__main__":
 
-    # Define BFS parameters for storing the queue, parent/children information, and initialize map
+    # Define Dijkstra parameters for storing the queue, parent/children information, and initialize map
     open_nodes = []
     children_nodes = []
     parent_nodes = []
     parent_index = 0
-    for i in range(len(map)): # Initialize map obstacles
+    map = 255*np.ones([301, 401, 3], dtype = np.uint8) # Define a map of ones for OpenCV Visualization.
+    for i in range(len(map)): # Initialize map obstacles by setting the bostacle points to 0. OpenCV displays values of 0 as black.
         for j in range(len(map[i])):
             point = j, i 
             if obstacles_chk(point):
@@ -211,6 +205,6 @@ if __name__ == "__main__":
     # Ask for user input of start and goal pos. Start and goal much be positive integers
     start_x, start_y, goal_x, goal_y = begin()
 
-    explored_map, path = dijkstra(start_x, start_y, goal_x, goal_y)
+    explored_map, path = dijkstra(start_x, start_y, goal_x, goal_y) # Call Dijkstra algorithm
 
     print(path)
