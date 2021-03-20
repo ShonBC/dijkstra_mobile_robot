@@ -163,8 +163,8 @@ def dijkstra(start_x, start_y, goal_x, goal_y):
             # if is_obstacle(node.x, node.y):
             #     continue
 
-            # if move_check(node_index): # Check if child is within the map or in an obstacle.
-            #     pass
+            if move_check(node_index): # Check if child is within the map or in an obstacle.
+                pass
 
             if node_index in visited: # If the next node is already visited, skip it
                 continue
