@@ -98,6 +98,7 @@ def visualize_path(node):
         map[point[1]][point[0]] = [0, 0, 255]
 
     cv2.imshow("Map", map)
+    cv2.waitKey(0)
 
 class Node: # Class for storing node position, cost to come, and parent index.
     def __init__(self, x, y, cost, parent_index):
@@ -165,6 +166,8 @@ def dijkstra(start_x, start_y, goal_x, goal_y):
 
             if move_check(node_index): # Check if child is within the map or in an obstacle.
                 pass
+            else: # If out of bounds or an obstacle, restart loop and choose new node.
+                continue
 
             if node_index in visited: # If the next node is already visited, skip it
                 continue
@@ -208,3 +211,4 @@ if __name__ == "__main__":
     explored_map, path = dijkstra(start_x, start_y, goal_x, goal_y) # Call Dijkstra algorithm
 
     print(path)
+    visualize_path(path)
