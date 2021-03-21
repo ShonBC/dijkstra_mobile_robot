@@ -3,7 +3,6 @@
 # Shon Cortes, Bo-Shiang Wang
 
 import numpy as np
-import copy
 import cv2
 
 def obstacles_chk(node): # Check if position is in Robot Adjusted obstacle space. Obstacle space was expanded by a radius of 10 + 5 for clearance for a total of 15. Warning obstacles appear larger than they are.
@@ -50,7 +49,7 @@ def obstacle_visulaize(node): # Check if point is an obstacle. Original, un-modi
 def move_check(child_node): # Check if the move is allowed. 
 
     # Check if out of puzzle boundary
-    if child_node[0] < 0 or child_node[1] < 0 or child_node[0] >= map.shape[1] or child_node[1] >= map.shape[0]:
+    if child_node[0] < 0 or child_node[1] < 0 or child_node[0] >= obstacle_map.shape[1] or child_node[1] >= obstacle_map.shape[0]:
         return False
 
     # Check if obstacle
@@ -60,52 +59,69 @@ def move_check(child_node): # Check if the move is allowed.
     else:
         return True
  
-def begin(): # Ask for user input of start and goal pos. Start and goal much be positive integers
+def begin(obstacle_map): # Ask for user input of start and goal pos. Start and goal much be positive integers
     while True:
         
         start_x, start_y = input("Enter starting x and y coordinates separated with a space: ").split()
         goal_x, goal_y = input("Enter goal x and y coordinates separated with a space: ").split()
-        
-        start_node = [int(start_x), int(start_y), parent_index]
-        goal_node = [int(goal_x), int(goal_y)]
+        start_x = int(start_x)
+        start_y = int(start_y)
+        goal_x = int(goal_x)
+        goal_y = int(goal_y)
+
+        # Initialize start and goal nodes from node class
+        start_node = Node(start_x, start_y, 0, -1, 15)
+        goal_node = Node(goal_x, goal_y, 0, -1, 15)
 
         # Check if obstacle
-        if obstacles_chk(start_node):
+        if obstacles_chk((start_node.x, start_node.y)):
             print("Start position is in an obstacle.")
-        elif obstacles_chk(goal_node):
+        elif obstacles_chk((goal_node.x, goal_node.y)):
             print("Goal position is in an obstacle.")
 
         # Check if values are positive and within the map
-        elif start_node[0] < 0 or start_node[1] < 0 or start_node[0] > map.shape[1] or start_node[1] > map.shape[0]:
+        elif start_node.x < 0 or start_node.y < 0 or start_node.x > obstacle_map.shape[1] or start_node.y > obstacle_map.shape[0]:
             print("Please enter positive integer values (0 <= x <= 400, 0 <= y <= 300).")
-        elif goal_node[0] < 0 or goal_node[1] < 0 or goal_node[0] > map.shape[1] or goal_node[1] > map.shape[0]:
+        elif goal_node.x < 0 or goal_node.y < 0 or goal_node.x > obstacle_map.shape[1] or goal_node.y > obstacle_map.shape[0]:
             print("Please enter positive integer values (0 <= x <= 400, 0 <= y <= 300).")
 
         else:
             break
-    return int(start_x), int(start_y), int(goal_x), int(goal_y)
 
-def visualize_BFS(node):
-    
+    return start_node, goal_node
+
+def visualize_Dij(node): # Visualize 
+    global obstacle_map
     for i in range(len(node)):
-        point = node[i]
-        map[point[1]][point[0]] = [0, 255, 0]
+        # point = node[i]
+        obstacle_map[node[1]][node[0]] = [0, 255, 0]
 
 def visualize_path(node): 
 
-    while len(node) != 0:
-        point = node.pop()
-        map[point[1]][point[0]] = [0, 0, 255]
+    for i in range(len(node)): # Trace path from start to goal
+        point = node[i]
+        obstacle_map[point[1]][point[0]] = [0, 0, 255]
 
-    cv2.imshow("Map", map)
-    cv2.waitKey(0)
+        cv2.imshow("Map", obstacle_map)
+        out.write(obstacle_map) # Save output as video
+        cv2.waitKey(10)
+
+
+    # while len(node) != 0: # Trace path form goal to start
+    #     point = node.pop()
+    #     obstacle_map[point[1]][point[0]] = [0, 0, 255]
+
+    #     cv2.imshow("Map", obstacle_map)
+    #     out.write(obstacle_map) # Save output as video
+    #     cv2.waitKey(10)
 
 class Node: # Class for storing node position, cost to come, and parent index.
-    def __init__(self, x, y, cost, parent_index):
+    def __init__(self, x, y, cost, parent_index, radius):
         self.x = x
         self.y = y
         self.cost = cost
         self.parent_index = parent_index
+        self.radius = radius
 
 def motion_model(): # Defines action set and cost [move in x, move in y, cost].
     model = [[1, 0, 1], # Right
@@ -119,11 +135,9 @@ def motion_model(): # Defines action set and cost [move in x, move in y, cost].
 
     return model
 
-def dijkstra(start_x, start_y, goal_x, goal_y):
+def dijkstra(start_node, goal_node):
     
-    # Initialize start and goal nodes from node class
-    start_node = Node(start_x, start_y, 0, -1)
-    goal_node = Node(goal_x, goal_y, 0, -1)
+    
 
     # obstacle_map = ObstacleMap((start_x, start_y), (goal_x, goal_y))
 
@@ -153,21 +167,15 @@ def dijkstra(start_x, start_y, goal_x, goal_y):
 
         for i in range(len(motion)): # Generate childeren of current node based on the action set.
 
-            node = Node(cur.x + motion[i][0], cur.y + motion[i][1], cur.cost + motion[i][2], cur_index) # Generate child node
+            node = Node(cur.x + motion[i][0], cur.y + motion[i][1], cur.cost + motion[i][2], cur_index, 15) # Generate child node
             node_index = (node.x, node.y) # Assign child node position
-
-            # Check if the next node is valid (Out of boundary)
-            # if not obstacle_map.is_valid(node.x, node.y):
-            #     continue
-
-            # Check if the next node is a obstacle
-            # if is_obstacle(node.x, node.y):
-            #     continue
 
             if move_check(node_index): # Check if child is within the map or in an obstacle.
                 pass
             else: # If out of bounds or an obstacle, restart loop and choose new node.
                 continue
+
+            visualize_Dij(node_index)
 
             if node_index in visited: # If the next node is already visited, skip it
                 continue
@@ -179,6 +187,20 @@ def dijkstra(start_x, start_y, goal_x, goal_y):
             else: # Else add child to the queue.
                 queue[node_index] = node
 
+            # cv2.imshow("Map", obstacle_map)
+            
+        cv2.imshow("Map", obstacle_map)
+
+        out.write(obstacle_map) # Save output as video
+
+        cv2.waitKey(1) # Refresh rate
+        # Condition to break the while loop
+        if i == 27:
+            break
+    cv2.imshow("Map", obstacle_map)
+
+    
+
     # Backtrack the path from Goal to Start
     path = []
     parent_index = goal_node.parent_index
@@ -188,27 +210,29 @@ def dijkstra(start_x, start_y, goal_x, goal_y):
         parent_index = n.parent_index
 
     path = list(reversed(path)) # Reverse the path list to get the path from start node to goal node.
-    path.append((goal_x, goal_y)) # Add Goal node to the end of the path list
+    path.append((goal_node.x, goal_node.y)) # Add Goal node to the end of the path list
+
     return explored_map, path
 
 if __name__ == "__main__":
 
-    # Define Dijkstra parameters for storing the queue, parent/children information, and initialize map
-    open_nodes = []
-    children_nodes = []
-    parent_nodes = []
-    parent_index = 0
-    map = 255*np.ones([301, 401, 3], dtype = np.uint8) # Define a map of ones for OpenCV Visualization.
-    for i in range(len(map)): # Initialize map obstacles by setting the bostacle points to 0. OpenCV displays values of 0 as black.
-        for j in range(len(map[i])):
+    obstacle_map = 255*np.ones([301, 401, 3], dtype = np.uint8) # Define a map of ones for OpenCV Visualization.
+
+    # Video output variables
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter('Dijkstra.mp4', fourcc, 20.0, (400, 300))
+
+    for i in range(len(obstacle_map)): # Initialize map obstacles by setting the bostacle points to 0. OpenCV displays values of 0 as black.
+        for j in range(len(obstacle_map[i])):
             point = j, i 
             if obstacles_chk(point):
-                map[i][j] = 0
+                obstacle_map[i][j] = 0
     
     # Ask for user input of start and goal pos. Start and goal much be positive integers
-    start_x, start_y, goal_x, goal_y = begin()
+    start_node, goal_node = begin(obstacle_map)
+    
 
-    explored_map, path = dijkstra(start_x, start_y, goal_x, goal_y) # Call Dijkstra algorithm
+    explored_map, path = dijkstra(start_node, goal_node) # Call Dijkstra algorithm
 
     print(path)
     visualize_path(path)
