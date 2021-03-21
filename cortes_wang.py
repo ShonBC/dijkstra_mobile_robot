@@ -5,42 +5,24 @@
 import numpy as np
 import cv2
 
-def obstacles_chk(node): # Check if position is in Robot Adjusted obstacle space. Obstacle space was expanded by a radius of 10 + 5 for clearance for a total of 15. Warning obstacles appear larger than they are.
-   
-    # Rectangle 
-    if node[1] >= (node[0] * 0.7) + 74.39 - 15 and node[1] <= (node[0] * 0.7) + 98.568 + 15 and node[1] >= (node[0] * -1.428) + 176.554 - 15 and node[1] <= (node[0] * -1.428) + 438.068 + 15:
-        return True
-
-    # Circle
-    elif (node[0] - 90)**2 + (node[1] - 70)**2 <= (35+15)**2:
-        return True
-
-    # Elipse
-    elif ((node[0] - 246)**2)/((60 + 15)**2) + ((node[1] - 145)**2)/((30 + 15)**2) <= 1:
-        return True
-    
-    # 3 section Rectangular Area
-    elif node[0] >= 200 - 15 and node[0] <= 230 + 15 and node[1] >= 230 - 15 and node[1] <= 280 + 15: # First section
-        return True
+def obstacles_chk(NODE): # Check if position is in Robot Adjusted obstacle space. Obstacle space was expanded by a radius of 10 + 5 for clearance for a total of 15. Warning obstacles appear larger than they are.
  
-    else:
-        return False
+    node = [NODE.x, NODE.y, NODE.radius]
 
-def obstacle_visulaize(node): # Check if point is an obstacle. Original, un-modified obstacle space.
     # Rectangle 
-    if node[1] >= (node[0] * 0.7) + 74.39 and node[1] <= (node[0] * 0.7) + 98.568 and node[1] >= (node[0] * -1.428) + 176.554 and node[1] <= (node[0] * -1.428) + 438.068:
+    if node[1] >= (node[0] * 0.7) + 74.39 - node[2] and node[1] <= (node[0] * 0.7) + 98.568 + node[2] and node[1] >= (node[0] * -1.428) + 176.554 - node[2] and node[1] <= (node[0] * -1.428) + 438.068 + node[2]:
         return True
 
     # Circle
-    elif (node[0] - 90)**2 + (node[1] - 70)**2 <= (35)**2:
+    elif (node[0] - 90)**2 + (node[1] - 70)**2 <= (35 + node[2])**2:
         return True
 
     # Elipse
-    elif ((node[0] - 246)**2)/((60)**2) + ((node[1] - 145)**2)/((30)**2) <= 1:
+    elif ((node[0] - 246)**2)/((60 + node[2])**2) + ((node[1] - 145)**2)/((30 + node[2])**2) <= 1:
         return True
     
     # 3 section Rectangular Area
-    elif node[0] >= 200 and node[0] <= 230 and node[1] >= 230 and node[1] <= 280: # First section
+    elif node[0] >= 200 - node[2] and node[0] <= 230 + node[2] and node[1] >= 230 - node[2] and node[1] <= 280 + node[2]: # First section
         return True
  
     else:
@@ -49,7 +31,7 @@ def obstacle_visulaize(node): # Check if point is an obstacle. Original, un-modi
 def move_check(child_node): # Check if the move is allowed. 
 
     # Check if out of puzzle boundary
-    if child_node[0] < 0 or child_node[1] < 0 or child_node[0] >= obstacle_map.shape[1] or child_node[1] >= obstacle_map.shape[0]:
+    if child_node.x < 0 or child_node.y < 0 or child_node.x >= obstacle_map.shape[1] or child_node.y >= obstacle_map.shape[0]:
         return False
 
     # Check if obstacle
@@ -70,13 +52,13 @@ def begin(obstacle_map): # Ask for user input of start and goal pos. Start and g
         goal_y = int(goal_y)
 
         # Initialize start and goal nodes from node class
-        start_node = Node(start_x, start_y, 0, -1, 15)
-        goal_node = Node(goal_x, goal_y, 0, -1, 15)
+        start_node = Node(start_x, start_y, 15, 0, -1)
+        goal_node = Node(goal_x, goal_y, 15, 0, -1)
 
         # Check if obstacle
-        if obstacles_chk((start_node.x, start_node.y)):
+        if obstacles_chk(start_node):
             print("Start position is in an obstacle.")
-        elif obstacles_chk((goal_node.x, goal_node.y)):
+        elif obstacles_chk(goal_node):
             print("Goal position is in an obstacle.")
 
         # Check if values are positive and within the map
@@ -96,7 +78,7 @@ def visualize_Dij(node): # Visualize
         # point = node[i]
         obstacle_map[node[1]][node[0]] = [0, 255, 0]
 
-def visualize_path(node): 
+def visualize_path(node): # Visualize path and wait for ESC before closing
 
     for i in range(len(node)): # Trace path from start to goal
         point = node[i]
@@ -104,7 +86,7 @@ def visualize_path(node):
 
         cv2.imshow("Map", obstacle_map)
         out.write(obstacle_map) # Save output as video
-        cv2.waitKey(10)
+    cv2.waitKey(0)
 
 
     # while len(node) != 0: # Trace path form goal to start
@@ -116,7 +98,7 @@ def visualize_path(node):
     #     cv2.waitKey(10)
 
 class Node: # Class for storing node position, cost to come, and parent index.
-    def __init__(self, x, y, cost, parent_index, radius):
+    def __init__(self, x, y, radius, cost, parent_index):
         self.x = x
         self.y = y
         self.cost = cost
@@ -136,10 +118,6 @@ def motion_model(): # Defines action set and cost [move in x, move in y, cost].
     return model
 
 def dijkstra(start_node, goal_node):
-    
-    
-
-    # obstacle_map = ObstacleMap((start_x, start_y), (goal_x, goal_y))
 
     # Initialize dictionaries
     path, distance, queue, visited = dict(), dict(), dict(), dict()
@@ -167,10 +145,10 @@ def dijkstra(start_node, goal_node):
 
         for i in range(len(motion)): # Generate childeren of current node based on the action set.
 
-            node = Node(cur.x + motion[i][0], cur.y + motion[i][1], cur.cost + motion[i][2], cur_index, 15) # Generate child node
+            node = Node(cur.x + motion[i][0], cur.y + motion[i][1], 15, cur.cost + motion[i][2], cur_index) # Generate child node
             node_index = (node.x, node.y) # Assign child node position
 
-            if move_check(node_index): # Check if child is within the map or in an obstacle.
+            if move_check(node): # Check if child is within the map or in an obstacle.
                 pass
             else: # If out of bounds or an obstacle, restart loop and choose new node.
                 continue
@@ -224,8 +202,9 @@ if __name__ == "__main__":
 
     for i in range(len(obstacle_map)): # Initialize map obstacles by setting the bostacle points to 0. OpenCV displays values of 0 as black.
         for j in range(len(obstacle_map[i])):
-            point = j, i 
-            if obstacles_chk(point):
+            # point = j, i, 0
+            obstacle = Node(j, i, 0, 0, 0)
+            if obstacles_chk(obstacle):
                 obstacle_map[i][j] = 0
     
     # Ask for user input of start and goal pos. Start and goal much be positive integers
@@ -234,5 +213,5 @@ if __name__ == "__main__":
 
     explored_map, path = dijkstra(start_node, goal_node) # Call Dijkstra algorithm
 
-    print(path)
+    # print(path)
     visualize_path(path)
