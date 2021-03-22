@@ -21,8 +21,12 @@ def obstacles_chk(NODE): # Check if position is in Robot Adjusted obstacle space
     elif ((node[0] - 246)**2)/((60 + node[2])**2) + ((node[1] - 145)**2)/((30 + node[2])**2) <= 1:
         return True
     
-    # 3 section Rectangular Area
-    elif node[0] >= 200 - node[2] and node[0] <= 230 + node[2] and node[1] >= 230 - node[2] and node[1] <= 280 + node[2]: # First section
+    # 3 section Rectangular Area    
+    elif node[0] >= 200 - node[2] and node[0] <= 210 + node[2] and node[1] >= 230 - node[2] and node[1] <= 280 + node[2]: # First section
+        return True
+    elif node[0] >= 210 - node[2] and node[0] <= 230 + node[2] and node[1] >= 270 - node[2] and node[1] <= 280 + node[2]: # Second section
+        return True
+    elif node[0] >= 210 - node[2] and node[0] <= 230 + node[2] and node[1] >= 230 - node[2] and node[1] <= 240 + node[2]: # Third section
         return True
  
     else:
