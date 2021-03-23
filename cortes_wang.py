@@ -168,8 +168,6 @@ def dijkstra(start_node, goal_node):
                     queue[node_index].parent_index = cur_index
             else: # Else add child to the queue.
                 queue[node_index] = node
-
-            # cv2.imshow("Map", obstacle_map)
             
         cv2.imshow("Map", obstacle_map)
 
@@ -202,7 +200,7 @@ if __name__ == "__main__":
 
     # Video output variables
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter('Dijkstra.mp4', fourcc, 20.0, (400, 300))
+    out = cv2.VideoWriter('Dijkstra.mp4', fourcc, 144.0, (400, 300)) # File name, format, framerate, frame size
 
     for i in range(len(obstacle_map)): # Initialize map obstacles by setting the bostacle points to 0. OpenCV displays values of 0 as black.
         for j in range(len(obstacle_map[i])):
