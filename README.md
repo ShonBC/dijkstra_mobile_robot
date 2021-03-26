@@ -1,5 +1,7 @@
-ENPM 661 - Planning for Autonomous Robots: 
+ENPM 661 - Planning for Autonomous Robots
+
 Project 3 - Point Robot Dijkstra on Mobile Robot using Half-Planes for Obstacle Space
+
 Shon Cortes, Bo-Shiang Wang
 
 Packages Used:
