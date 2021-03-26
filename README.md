@@ -26,6 +26,7 @@ Run the program:
     Enter goal x and y coordinates separated with a space: 400 300
     
 Program Summary:
+
     After user provides input for start and goal coordinates, a Dijkstra algorithm explores the map to find a path to the goal.
     The program opens a window that shows the map being explored. The white space represents the open map area, any black space represents an obstacel. 
     As the program runs, the explored space highlights green. Once a path to the goal is found, the path is highlighted in red.
